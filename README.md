@@ -158,7 +158,7 @@ trajectory_prediction/
 ```bash
 # Clone the repository
 git clone https://github.com/Adi02032006/Mahe_Mobility.git
-cd trajectory_prediction
+cd Mahe_Mobility
 
 # Create and activate virtual environment
 python -m venv venv
