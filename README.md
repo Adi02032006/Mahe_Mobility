@@ -157,7 +157,7 @@ trajectory_prediction/
 
 ```bash
 # Clone the repository
-git clone https://github.com/YOUR_USERNAME/trajectory_prediction.git
+git clone https://github.com/Adi02032006/Mahe_Mobility.git
 cd trajectory_prediction
 
 # Create and activate virtual environment
