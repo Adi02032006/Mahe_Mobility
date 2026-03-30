@@ -45,7 +45,7 @@ Input (8, 11)
 │  (128-dim)   │              │   (64-dim)     │
 └──────────────┘              │ avg-pool top-5 │
     │                         │ neighbours     │
-    └──────────┬──────────────┘__ __ __ __ __ _|
+    └──────────┬──────────────┘
                ▼
     ┌─────────────────────┐
     │   Context Fusion    │  — LayerNorm, 192-dim
@@ -71,7 +71,7 @@ Input (8, 11)
 | 0, 1 | x, y | Relative position (origin = last observed point) |
 | 2, 3 | vx, vy | Velocity via finite differencing |
 | 4, 5 | ax, ay | Acceleration |
-| 6 | speed | √(vx² + vy²) |
+| 6 | speed | sqrt(vx^2 + vy^2) |
 | 7 | sin θ | Heading sine |
 | 8 | cos θ | Heading cosine |
 | 9 | is_pedestrian | Agent type one-hot |
@@ -123,24 +123,28 @@ data/v1.0-mini/
 ## Project Structure
 
 ```
-trajectory_prediction/
+Mahe_Mobility/
 ├── data/
-│   └── v1.0-mini/          ← nuScenes JSON files go here
+│   ├── v1.0-mini/               ← nuScenes JSON files go here
+│   └── processed_dataset.pkl    ← pre-built dataset (included)
 ├── preprocessing/
-│   ├── extract.py           ← parse nuScenes → raw trajectories
-│   ├── features.py          ← 11-dim features + social pooling
-│   ├── augmentation.py      ← flip, rotate, speed jitter, noise
-│   └── dataset_builder.py   ← sliding window → training samples
+│   ├── extract.py               ← parse nuScenes → raw trajectories
+│   ├── features.py              ← 11-dim features + social pooling
+│   ├── augmentation.py          ← flip, rotate, speed jitter, noise
+│   └── dataset_builder.py       ← sliding window → training samples
 ├── models/
-│   └── lstm_model.py        ← Transformer encoder + K×LSTM decoders
+│   └── lstm_model.py            ← Transformer encoder + K×LSTM decoders
 ├── training/
-│   └── train.py             ← training loop with WTA schedule
+│   └── train.py                 ← training loop with WTA schedule
 ├── evaluation/
-│   └── metrics.py           ← minADE, minFDE, MissRate
-├── checkpoints/             ← saved model weights (auto-created)
-├── dataset.py               ← PyTorch Dataset with augmentation
-├── config.py                ← ALL hyperparameters in one place
-└── main.py                  ← single entry point
+│   └── metrics.py               ← minADE, minFDE, MissRate
+├── checkpoints/
+│   └── best_model.pt            ← trained weights (included, epoch 440)
+├── dataset.py                   ← PyTorch Dataset with augmentation
+├── config.py                    ← ALL hyperparameters in one place
+├── main.py                      ← main entry point
+├── inference.py                 ← run predictions on custom coordinates
+└── README.md
 ```
 
 ---
@@ -151,7 +155,7 @@ trajectory_prediction/
 
 - Python 3.8+
 - NVIDIA GPU (recommended) — tested on RTX 4060 with CUDA 12.4
-- ~500 MB disk space for dataset + checkpoints
+- ~500 MB disk space
 
 ### Install
 
@@ -190,28 +194,67 @@ GPU: True
 
 ## How to Run
 
-### Full Pipeline (recommended)
+> **No training required.** The trained checkpoint (`checkpoints/best_model.pt`) and pre-built dataset (`data/processed_dataset.pkl`) are already included in this repository.
+
+### Evaluate the trained model
 
 ```bash
-python main.py
+python main.py --mode evaluate
 ```
 
-This automatically runs: **preprocess → train → evaluate**
+Expected output:
+```
+  minADE   : 0.3198 m
+  minFDE   : 0.5636 m
+  MissRate : 0.014
 
-### Step by Step
+  (checkpoint: epoch 440)
+```
+
+### Run inference on custom coordinates
+
+Provide 8 (x, y) positions representing 2 seconds of observed motion:
+
+```bash
+python inference.py --coords "0,0 0.5,0.1 1,0.2 1.5,0.3 2,0.35 2.5,0.4 3,0.42 3.5,0.45"
+```
+
+Or run with the built-in default example:
+
+```bash
+python inference.py
+```
+
+For a cyclist instead of a pedestrian:
+
+```bash
+python inference.py --coords "0,0 1,0 2,0 3,0 4,0 5,0 6,0 7,0" --cyclist
+```
+
+The model outputs 3 predicted future trajectories (12 steps × 2 coords each):
+```
+OUTPUT — 3 predicted future trajectories:
+
+  Mode 1:  continues at current velocity (straight)
+  Mode 2:  gradual turn / drift
+  Mode 3:  deceleration / slow down
+```
+
+Predictions are also saved to `predictions.npy` — shape `(3, 12, 2)`.
+
+### Retrain from scratch (optional)
+
+Only needed if you want to retrain the model yourself:
 
 ```bash
 # Step 1: Build dataset from raw nuScenes JSONs
 python main.py --mode preprocess
-# Expected output: [dataset_builder] 1298 samples → data/processed_dataset.pkl
 
-# Step 2: Train the model (600 epochs, ~35 min on RTX 4060)
+# Step 2: Train (600 epochs, ~35 min on RTX 4060)
 python main.py --mode train
-# Prints live training table with Loss, minADE, minFDE, MissRate per epoch
 
-# Step 3: Evaluate best checkpoint
+# Step 3: Evaluate
 python main.py --mode evaluate
-# Prints final: minADE, minFDE, MissRate
 ```
 
 ### Configuration
@@ -219,30 +262,18 @@ python main.py --mode evaluate
 All hyperparameters are in `config.py`. Key settings:
 
 ```python
-OBS_LEN        = 8      # observation window (2 seconds at 4 Hz)
-PRED_LEN       = 12     # prediction horizon (3 seconds at 4 Hz)
-K              = 3      # number of predicted trajectory modes
-NUM_EPOCHS     = 600    # total training epochs
-WTA_START_EPOCH= 200    # when Winner-Takes-All kicks in
-HIDDEN_DIM     = 128    # model hidden dimension
-TF_DROPOUT     = 0.3    # dropout for regularisation
+OBS_LEN         = 8      # observation window (2 seconds at 4 Hz)
+PRED_LEN        = 12     # prediction horizon (3 seconds at 4 Hz)
+K               = 3      # number of predicted trajectory modes
+NUM_EPOCHS      = 600    # total training epochs
+WTA_START_EPOCH = 200    # when Winner-Takes-All kicks in
+HIDDEN_DIM      = 128    # model hidden dimension
+TF_DROPOUT      = 0.3    # dropout for regularisation
 ```
 
 ---
 
 ## Example Outputs / Results
-
-### Training Output (sample)
-
-```
-  Ep |     Loss |    vLoss |   mADE |   mFDE |  Miss |       LR | Mode
-──────────────────────────────────────────────────────────────────────
-   1 |  11.6124 |  10.1973 | 3.0328 | 5.6938 | 0.702 | 6.00e-05 | BoK
-  50 |   0.4200 |   0.5100 | 0.6800 | 1.3200 | 0.210 | 2.97e-04 | BoK
- 200 |   0.1050 |   0.2100 | 0.4400 | 0.8100 | 0.065 | 1.51e-04 | WTA
- 440 |   0.0640 |   0.1040 | 0.3198 | 0.5636 | 0.014 | 4.03e-05 | WTA ← best
- 600 |   0.0540 |   0.1214 | 0.3302 | 0.5785 | 0.019 | 1.00e-06 | WTA
-```
 
 ### Final Evaluation Output
 
@@ -254,6 +285,44 @@ TF_DROPOUT     = 0.3    # dropout for regularisation
   MissRate : 0.014
 
   (checkpoint: epoch 440)
+```
+
+### Training Progression (sample)
+
+```
+  Ep |     Loss |    vLoss |   mADE |   mFDE |  Miss |       LR | Mode
+──────────────────────────────────────────────────────────────────────
+   1 |  11.6124 |  10.1973 | 3.0328 | 5.6938 | 0.702 | 6.00e-05 | BoK
+  50 |   0.4200 |   0.5100 | 0.6800 | 1.3200 | 0.210 | 2.97e-04 | BoK
+ 200 |   0.1050 |   0.2100 | 0.4400 | 0.8100 | 0.065 | 1.51e-04 | WTA
+ 440 |   0.0640 |   0.1040 | 0.3198 | 0.5636 | 0.014 | 4.03e-05 | WTA <- best
+ 600 |   0.0540 |   0.1214 | 0.3302 | 0.5785 | 0.019 | 1.00e-06 | WTA
+```
+
+### Inference Output Example
+
+```
+INPUT — 8 observed positions (x, y) in metres:
+  t=0.0s  x=0.000  y=0.000
+  t=0.5s  x=0.500  y=0.100
+  ...
+
+OUTPUT — 3 predicted future trajectories:
+
+  Mode 1:
+    t=+0.5s  x=3.953  y=0.501
+    t=+1.0s  x=4.484  y=0.512
+    ...
+
+  Mode 2:
+    t=+0.5s  x=3.884  y=0.455
+    t=+1.0s  x=4.429  y=0.552
+    ...
+
+  Mode 3:
+    t=+0.5s  x=3.736  y=0.475
+    t=+1.0s  x=4.175  y=0.500
+    ...
 ```
 
 ### What the Numbers Mean
