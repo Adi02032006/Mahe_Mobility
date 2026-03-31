@@ -1,8 +1,6 @@
 """
 preprocessing/augmentation.py
 ------------------------------
-On-the-fly augmentation applied per sample during training.
-Augmentations that preserve trajectory physics:
 
 1. Horizontal flip     — mirrors the scene left-right
 2. Random rotation     — 90 / 180 / 270 degrees (discrete, preserves scale)
@@ -10,7 +8,6 @@ Augmentations that preserve trajectory physics:
 4. Gaussian noise      — tiny positional noise to prevent overfitting
 
 ALL augmentations operate in the RELATIVE coordinate frame
-(origin already subtracted) so they don't reintroduce location bias.
 
 Each function takes obs (obs_len, 11) + future (pred_len, 2)
 and returns augmented versions of both.
@@ -109,7 +106,7 @@ def add_position_noise(obs: np.ndarray, future: np.ndarray,
 
 
 # ─────────────────────────────────────────────
-# Combined augmentation (called per sample in Dataset)
+# Combined augmentation 
 # ─────────────────────────────────────────────
 
 def augment(obs: np.ndarray, future: np.ndarray,
