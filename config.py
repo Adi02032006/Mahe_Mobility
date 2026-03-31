@@ -47,14 +47,14 @@ K              = 3        # was 5 — 5 modes won't all specialise on this few s
 
 # ── Training ─────────────────────────────────────────────
 BATCH_SIZE      = 16       # smaller batch = more gradient updates per epoch
-NUM_EPOCHS      = 300
-LR              = 3e-4
+NUM_EPOCHS      = 600
+LR              = 2e-4
 LR_WARMUP       = 10
 LR_MIN          = 1e-6
 WEIGHT_DECAY    = 1e-4
 GRAD_CLIP       = 1.0
 DIVERSITY_W     = 0.1
-WTA_START_EPOCH = 60      # slightly later — let BoK run longer on small data
+WTA_START_EPOCH = 200      # slightly later — let BoK run longer on small data
 VAL_SPLIT       = 0.15
 
 # ── Eval ─────────────────────────────────────────────────
