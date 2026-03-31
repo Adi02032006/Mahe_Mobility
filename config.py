@@ -1,7 +1,6 @@
 """
 config.py — central config for ALL hyperparameters.
-Tuned for nuScenes v1.0-mini (10 scenes, ~18k annotations, small dataset).
-Edit here. Never hard-code values in other files.
+Tuned for nuScenes v1.0-mini (10 scenes, ~18k annotations).
 """
 import torch
 
@@ -23,7 +22,6 @@ SOCIAL_TOP_K   = 5        # top-K neighbours to pool
 FEAT_DIM = 11
 
 # ── Augmentation ─────────────────────────────────────────
-# CRITICAL for mini dataset — this is your main weapon against overfitting.
 # With only 10 scenes, augmentation gives you 4-5x effective data.
 USE_AUGMENTATION  = True
 AUG_FLIP_PROB     = 0.5    # horizontal flip
@@ -32,9 +30,8 @@ AUG_SPEED_JITTER  = 0.25   # ±20% speed scale — slightly aggressive
 AUG_NOISE_STD     = 0.03   # 2cm position noise
 
 # ── Model ────────────────────────────────────────────────
-# Deliberately smaller than v2 defaults.
 # On a small dataset, a big model memorises the 10 scenes perfectly
-# and scores terribly on unseen data. Smaller + more dropout = better ranking.
+
 HIDDEN_DIM     = 128      # was 256 — reduced to prevent overfitting
 SOCIAL_DIM     = 64
 NUM_HEADS      = 2        # was 4
@@ -62,7 +59,7 @@ MISS_THRESHOLD  = 2.0     # metres — FDE > this = miss
 
 # ── Hardware ─────────────────────────────────────────────
 DEVICE      = "cuda" if torch.cuda.is_available() else "cpu"
-NUM_WORKERS = 0            # keep 0 on Windows
+NUM_WORKERS = 0            
 
 # ── Misc ─────────────────────────────────────────────────
 SEED        = 42
