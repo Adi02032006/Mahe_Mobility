@@ -1,7 +1,7 @@
 # Intent & Trajectory Prediction
 ### MAHE Mobility Hackathon — Problem Statement 1
 **Manipal Institute of Technology, Bengaluru**
-*Centre of Excellence in Autonomous Mobility | IEEE VTS | Department of ECE*
+
 
 ---
 
@@ -45,7 +45,7 @@ Input (8, 11)
 │  (128-dim)   │              │   (64-dim)     │
 └──────────────┘              │ avg-pool top-5 │
     │                         │ neighbours     │
-    └──────────┬──────────────┘
+    └──────────┬──────────────┘__ __ __ __ __ _|
                ▼
     ┌─────────────────────┐
     │   Context Fusion    │  — LayerNorm, 192-dim
@@ -374,7 +374,3 @@ pip install numpy
 
 ---
 
-## License
-
-This project was developed for the MAHE Mobility Hackathon 2025.
-Manipal Institute of Technology, Bengaluru — Department of Electronics & Communication Engineering.
