@@ -3,14 +3,7 @@ preprocessing/features.py
 --------------------------
 Feature vector per timestep (11-dim):
   [x_rel, y_rel, vx, vy, ax, ay, speed, sin_θ, cos_θ, is_pedestrian, is_cyclist]
-
-Social pooling:
-  For each neighbour within radius, compute (rel_x, rel_y, rel_vx, rel_vy)
-  → average-pool over top-K nearest → 4-dim social vector.
-  This is far stronger than scalar distances because the model sees
-  WHERE neighbours are going, not just how far they are.
 """
-
 import numpy as np
 
 
