@@ -3,25 +3,6 @@ models/lstm_model.py
 --------------------
 Architecture: Transformer Encoder → Social MLP → K × LSTM Decoders
 
-WHY this beats a plain LSTM:
-─────────────────────────────
-• Transformer encoder: self-attention over the obs window captures
-  arbitrary long-range dependencies (e.g. a pedestrian who slowed
-  down 6 frames ago, then accelerated). LSTMs see the past through
-  a bottleneck hidden state; Transformers see all timesteps equally.
-
-• Social MLP: takes average-pooled (rel_x, rel_y, rel_vx, rel_vy)
-  from neighbours → tells the model WHERE others are going, not just
-  how far they are.
-
-• K=5 independent LSTM decoders: each starts from a different
-  projection of the context, learning distinct motion modes
-  (straight, turn left, stop, etc.).
-
-• Winner-Takes-All (WTA) schedule: after epoch WTA_START, we hard-
-  assign each sample to its closest mode and only backprop through
-  that decoder. This forces specialisation and kills mode collapse.
-
 Loss:
   L = Best-of-K MSE  +  diversity penalty
   After epoch WTA_START: L = WTA MSE (hard assignment, no diversity)
