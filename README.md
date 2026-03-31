@@ -104,20 +104,6 @@ For each agent within 15m, compute `(rel_x, rel_y, rel_vx, rel_vy)` relative to 
 | Training samples | 1,298 |
 | Train / Val split | 85% / 15% |
 
-Download: [nuScenes website](https://www.nuscenes.org/nuscenes#download)
-
-After downloading, place the JSON files in:
-```
-data/v1.0-mini/
-├── sample_annotation.json
-├── instance.json
-├── category.json
-├── sample.json
-├── scene.json
-├── visibility.json
-└── sample_data.json
-```
-
 ---
 
 ## Project Structure
